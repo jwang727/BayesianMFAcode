@@ -3,7 +3,7 @@ SheetAndPlate,InternalRemelting,3.0747,2009,Global,9,5
 SheetAndPlate,InternalRefining,0.0,2009,Global,9,6
 SheetAndPlate,Remelting,0.0,2009,Global,9,7
 SheetAndPlate,RecycleRefining,0.0,2009,Global,9,8
-Foil,InternalRemelting,2.387,2009,Global,10,5
+Foil,InternalRemelting,2.3872,2009,Global,10,5
 Foil,InternalRefining,0.0,2009,Global,10,6
 Foil,Remelting,0.0,2009,Global,10,7
 Foil,RecycleRefining,0.0,2009,Global,10,8
@@ -144,7 +144,7 @@ PowderAndPaste,Manuf_OTN,0.784,2009,Global,16,42
 
 Manuf_BC,OtherRepo,0.0242,2009,Global,32,44
 Manuf_TAU,OtherRepo,0.02464,2009,Global,33,44
-Manuf_TAE,OtherRepo,0.00784,2009,Global,34,44
+Manuf_TAE,OtherRepo,0.0024,2009,Global,34,44
 Manuf_TOT,OtherRepo,0.0112,2009,Global,35,44
 Manuf_PCA,Landfillincineration,0.021,2009,Global,36,45
 Manuf_POT,Landfillincineration,0.0155,2009,Global,37,45
