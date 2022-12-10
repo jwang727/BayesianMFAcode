@@ -1,0 +1,9 @@
+Process,quantity,time,location,massconserved,Processnumber,ParentProcess,Subprocessnumbers
+Production,-2,1994,China,1,0,0,nan
+FabricationManufacturing,0,1994,China,1,1,0,nan
+Use,710,1994,China,1,2,0,nan
+WasteManagement,0,1994,China,1,3,0,nan
+Environment,340,1994,China,1,4,0,nan
+Lithosphere,-1290,1994,China,1,5,0,nan
+ImportExport,320,1994,China,1,6,0,nan
+Unknown,-81,1994,China,1,7,0,nan
