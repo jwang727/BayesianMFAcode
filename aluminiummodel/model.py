@@ -7,7 +7,7 @@ from pymc3 import TruncatedNormal, Normal, MvNormal, HalfCauchy, InverseGamma, M
 
 from preprocessingagg import createcompactmatrix,createcompactratiomatrix
 
-sigmastd=0.5
+sigmastd=0.05
 
 def mfamodel(priormean, covariancevec, designmatrix,ratiomatrixtop, \
                    ratiomatrixbottom, datavector, ratiovector, availablechildstocksandflows, m, \
@@ -38,56 +38,39 @@ def mfamodel(priormean, covariancevec, designmatrix,ratiomatrixtop, \
 
         if sigmadeterministic == 0:
 
-            sigmastocks = InverseGamma("sigmastocks", alpha=4.0,
-                                       beta=3.0 * np.maximum(np.abs(datavector[stockindex]) / 10, 0.1),
-                                       shape=datavector[stockindex].shape[0])
+            sigmastocks = InverseGamma("sigmastocks", alpha=4.0,beta=3.0 * np.maximum(np.abs(datavector[stockindex]) / 10, 0.1), shape=datavector[stockindex].shape[0])
 
-            sigmaflows = InverseGamma("sigmaflows", alpha=4.0,
-                                      beta=3.0 * np.maximum(np.abs(datavector[flowindex]) / 10, 0.1),
-                                      shape=datavector[flowindex].shape[0])
+            sigmaflows = InverseGamma("sigmaflows", alpha=4.0, beta=3.0 * np.maximum(np.abs(datavector[flowindex]) / 10, 0.1), shape=datavector[flowindex].shape[0])
+            
+            sigmaCoM = InverseGamma("sigmaCoM", alpha=4.0,beta=3.0 * sigmastd)
+            
             if useratiodata == 1:
-                sigmaratio = InverseGamma("sigmaratio", alpha=4.0, beta=3.0 * np.maximum(0.1 * ratiovector, 0.01),
-                                          shape=ratiovector.shape[0])
+                sigmaratio = InverseGamma("sigmaratio", alpha=4.0, beta=3.0 * np.maximum(0.1 * ratiovector, 0.01), shape=ratiovector.shape[0])
         else:
             sigmastocks = np.maximum(np.abs(datavector[stockindex]) / 10, 0.1)
             sigmaflows = np.maximum(np.abs(datavector[flowindex]) / 10, 0.1)
+            sigmaCoM=sigmastd
             if useratiodata == 1:
                 sigmaratio = np.maximum(0.1 * ratiovector, 0.01)
 
-        betastocks = pm.Normal('stocks', mu=priormean[availablechildstocks],
-                               sigma=np.sqrt(covariancevec[availablechildstocks]),
-                               shape=priormean[availablechildstocks].shape[0])
+        betastocks = pm.Normal('stocks', mu=priormean[availablechildstocks],sigma=np.sqrt(covariancevec[availablechildstocks]),shape=priormean[availablechildstocks].shape[0])
 
-        betaflows = pm.TruncatedNormal('flows', mu=priormean[availablechildflows],
-                                       sigma=np.sqrt(covariancevec[availablechildflows]), lower=0,
-                                       shape=priormean[availablechildflows].shape[0])
+        betaflows = pm.TruncatedNormal('flows', mu=priormean[availablechildflows],sigma=np.sqrt(covariancevec[availablechildflows]), lower=0,shape=priormean[availablechildflows].shape[0])
 
-        betadata = pm.Deterministic('datavars', var=pm.math.dot(designmatrixstockscompact, betastocks) + pm.math.dot(
-            designmatrixflowscompact, betaflows))
+        betadata = pm.Deterministic('datavars', var=pm.math.dot(designmatrixstockscompact, betastocks) + pm.math.dot(designmatrixflowscompact, betaflows))
 
         # Define likelihood
-        likelihoodstocks = pm.Normal("stockdata", mu=pm.math.dot(designmatrixstockscompact[stockindex, :], betastocks)
-                                                     + pm.math.dot(designmatrixflowscompact[stockindex, :], betaflows)
-                                     ,sigma=sigmastocks,observed=datavector[stockindex])  # np.abs(datavector[stockindex])/10
+        likelihoodstocks = pm.Normal("stockdata", mu=pm.math.dot(designmatrixstockscompact[stockindex, :], betastocks)+ pm.math.dot(designmatrixflowscompact[stockindex, :], betaflows),sigma=sigmastocks,observed=datavector[stockindex])  # np.abs(datavector[stockindex])/10
 
-        likelihoodflows = pm.TruncatedNormal("flowdata",
-                                             mu=pm.math.dot(designmatrixstockscompact[flowindex, :], betastocks)
-                                                + pm.math.dot(designmatrixflowscompact[flowindex, :], betaflows)
-                                             ,sigma=sigmaflows, lower=0.0, observed=datavector[flowindex])  # np.abs(datavector[flowindex])/10
+        likelihoodflows = pm.TruncatedNormal("flowdata",mu=pm.math.dot(designmatrixstockscompact[flowindex, :], betastocks)+ pm.math.dot(designmatrixflowscompact[flowindex, :], betaflows),sigma=sigmaflows, lower=0.0, observed=datavector[flowindex])  # np.abs(datavector[flowindex])/10
 
         if useratiodata == 1:
-            likelihoodratio = pm.Normal("ratiodata", mu=(pm.math.dot(ratiomatrixtopstockscompact, betastocks)
-                                                         + pm.math.dot(ratiomatrixtopflowscompact, betaflows)) / (pm.math.dot(ratiomatrixbottomstockscompact,betastocks)
-                                                                    + pm.math.dot(ratiomatrixbottomflowscompact,betaflows))
-                                        ,sigma=sigmaratio,observed=ratiovector)  # sigma=np.maximum(sigmavector[ratioindex],0.1)
+            likelihoodratio = pm.Normal("ratiodata", mu=(pm.math.dot(ratiomatrixtopstockscompact, betastocks)+ pm.math.dot(ratiomatrixtopflowscompact, betaflows)) / (pm.math.dot(ratiomatrixbottomstockscompact,betastocks)+pm.math.dot(ratiomatrixbottomflowscompact,betaflows)),sigma=sigmaratio,observed=ratiovector)  # sigma=np.maximum(sigmavector[ratioindex],0.1)
 
-        likelihoodmassconserve = pm.Normal("CoM", mu=pm.math.dot(designmatrixstockscompact[CoMindex, :], betastocks)
-                                                     + pm.math.dot(designmatrixflowscompact[CoMindex, :], betaflows)
-                                           ,sigma=sigmastd,observed=datavector[CoMindex])  # sigmastd+np.abs(datavector[CoMindex])/10
+        likelihoodmassconserve = pm.Normal("CoM", mu=pm.math.dot(designmatrixstockscompact[CoMindex, :], betastocks)+ pm.math.dot(designmatrixflowscompact[CoMindex, :], betaflows),sigma=sigmaCoM,observed=datavector[CoMindex])  # sigmastd+np.abs(datavector[CoMindex])/10
 
         # likelihood = pm.Normal("y", mu=pm.math.dot(designmatrixstockscompact, betastocks) + pm.math.dot(designmatrixflowscompact, betaflows), sigma=sigmastd, observed=datavector)
 
-        trace = sample(10000, return_inferencedata=True, chains=2, init='jitter+adapt_diag', tune=2000,
-                       target_accept=0.95, random_seed=123456)
+        trace = sample(10000, return_inferencedata=True, chains=2, init='jitter+adapt_diag', tune=2000,target_accept=0.95, random_seed=123456)
 
     return trace, model

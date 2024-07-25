@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import arviz as az
+import pandas as pd
 
 def filelabeler(useratiodata):
     if useratiodata==1:
@@ -89,6 +90,7 @@ def ppplots(posterior_pred,datavector,stockindex,flowindex,CoMindex,useratiodata
     plt.plot(stock_hdi[:, 1], linestyle='None', marker='_', color='red')
     plt.plot(datavector[stockindex], linestyle='None', marker='.')
     plt.plot((range(0, stock_hdi[:, 0].size), range(0, stock_hdi[:, 0].size)), (stock_hdi[:, 0], stock_hdi[:, 1]),color='black', linewidth=0.5)
+    plt.ylabel('Mass (Mt)')
     plt.title('Stock data 95% HDI of PPD')
     plt.xticks([])
     plt.savefig('outputgraphs' + filelabeler(useratiodata) + '/' + 'stockpredictivehdi' + filelabeler(useratiodata) + '.pdf',bbox_inches="tight")
@@ -100,6 +102,7 @@ def ppplots(posterior_pred,datavector,stockindex,flowindex,CoMindex,useratiodata
     plt.plot(datavector[flowindex], linestyle='None', marker='.')
     plt.plot((range(0, flow_hdi[:, 0].size), range(0, flow_hdi[:, 0].size)), (flow_hdi[:, 0], flow_hdi[:, 1]),
              color='black', linewidth=0.5)
+    plt.ylabel('Mass (Mt)')
     plt.title('Flow data 95% HDI of PPD')
     plt.xticks([])
     plt.savefig('outputgraphs' + filelabeler(useratiodata) + '/' + 'flowpredictivehdi' + filelabeler(useratiodata) + '.pdf',
@@ -111,14 +114,30 @@ def ppplots(posterior_pred,datavector,stockindex,flowindex,CoMindex,useratiodata
     plt.plot(datavector[CoMindex], linestyle='None', marker='.')
     plt.plot((range(0, CoM_hdi[:, 0].size), range(0, CoM_hdi[:, 0].size)), (CoM_hdi[:, 0], CoM_hdi[:, 1]),
              color='black', linewidth=0.5)
+    plt.ylabel('Mass (Mt)')
     plt.title('CoM 95% HDI of PPD')
     plt.xticks([])
     plt.savefig('outputgraphs' + filelabeler(useratiodata) + '/' + 'CoMpredictivehdi' + filelabeler(useratiodata) + '.pdf',
                 bbox_inches="tight")
     plt.show()
 
+    columns = ['Data_value', '95%_HDI_lower', '95%_HDI_higher', 'p_value']
 
+    stockdatappd = np.column_stack((datavector[stockindex],stock_hdi[:, 0],stock_hdi[:, 1],stocktally / posterior_pred['stockdata'].shape[0]))
 
+    flowdatappd = np.column_stack((datavector[flowindex], flow_hdi[:, 0], flow_hdi[:, 1], flowtally / posterior_pred['stockdata'].shape[0]))
+
+    CoMdatappd = np.column_stack((datavector[CoMindex], CoM_hdi[:, 0], CoM_hdi[:, 1], CoMtally / posterior_pred['stockdata'].shape[0]))
+
+    stockdatappd = pd.DataFrame(stockdatappd, columns=columns)
+
+    flowdatappd = pd.DataFrame(flowdatappd, columns=columns)
+
+    CoMdatappd = pd.DataFrame(CoMdatappd, columns=columns)
+
+    stockdatappd.to_csv('stockdatappd'+filelabeler(useratiodata)+'.csv', index=False)
+    flowdatappd.to_csv('flowdatappd'+filelabeler(useratiodata)+'.csv', index=False)
+    CoMdatappd.to_csv('CoMdatappd'+filelabeler(useratiodata)+'.csv', index=False)
 
 def ppplotsratiodata(posterior_pred,ratiovector,useratiodata):
 
@@ -168,6 +187,14 @@ def ppplotsratiodata(posterior_pred,ratiovector,useratiodata):
         bbox_inches="tight")
     plt.show()
 
+    columns = ['Data_value', '95%_HDI_lower', '95%_HDI_higher', 'p_value']
+
+    ratiodatappd=np.column_stack((ratiovector,ratio_hdi[:, 0],ratio_hdi[:, 1],ratiotally / posterior_pred['stockdata'].shape[0]))
+
+    ratiodatappd = pd.DataFrame(ratiodatappd, columns=columns)
+
+    ratiodatappd.to_csv('ratiodatappd'+filelabeler(useratiodata)+'.csv', index=False)
+
 def top10hdi(trace,processnamesdict,availablechildstocksandflows,useratiodata,m):
 
     """
@@ -215,9 +242,17 @@ def top10hdi(trace,processnamesdict,availablechildstocksandflows,useratiodata,m)
 
     plt.xticks(rotation=90)
     plt.title('Top 10 95% HDI lengths of marginal posterior distributions')
-    plt.ylabel('HDI length')
+    plt.ylabel('HDI length (Mt)')
     plt.savefig('outputgraphs' + filelabeler(useratiodata) + '/' + 'top10largesthdi' + filelabeler(useratiodata) + '.pdf',
                 bbox_inches="tight")
     plt.show()
+
+    columns = ['Variable Name', '95%_HDI_width']
+
+    top10hdidata = np.column_stack((quotient4names[0:10],ci_95_length[posteriorhdilargesttosmallest][0:10]))
+
+    top10hdidata = pd.DataFrame(top10hdidata, columns=columns)
+
+    top10hdidata.to_csv('top10hdidata'+filelabeler(useratiodata)+'.csv', index=False)
 
     return ci_95_length
